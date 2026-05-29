@@ -1,4 +1,4 @@
-PS2EXE Builder GUI  
+# PS2EXE Builder GUI  
 A powerful, dark-themed WPF graphical interface for the PS2EXE module. This tool automates the process of converting PowerShell installation scripts into standalone Windows executables (.exe), complete with embedded payloads, dynamic EULAs, and custom installation behaviors.  
 
 PS2EXE Builder GUI  
@@ -35,7 +35,7 @@ In your instalador.ps1, define your destination folder variable using the {{DEST
 
 powershell  
 
-# The builder replaces {{DEST_FOLDER}} with the text from the "Nome do App" field  
+The builder replaces {{DEST_FOLDER}} with the text from the "Nome do App" field  
  $destFolder = "{{DEST_FOLDER}}"  
 
 if ($isAdmin) {  
@@ -48,11 +48,11 @@ The builder embeds the payload and EULA into the EXE. Your installer script must
 
 powershell  
 
-# 1. Extract the embedded payload  
+1. Extract the embedded payload  
  $zipPath = "$env:TEMP\payload.zip"  
 Expand-Archive -Path $zipPath -DestinationPath $installPath -Force  
 
-# 2. Show EULA (if it exists)  
+2. Show EULA (if it exists)  
  $eulaPath = "$env:TEMP\eula.txt" # or .rtf depending on your setup  
 if (Test-Path $eulaPath) {  
     # Show your EULA form logic here  
@@ -83,5 +83,5 @@ WPF (Windows Presentation Foundation) via XAML
 System.Windows.Forms (for File/Folder dialogs)  
 ps2exe (PowerShell to EXE compiler)  
 📜 License  
-This project is licensed under the Apache 2.0 - see the LICENSE file for details.
+This project is licensed under the Apache License 2.0 - see the LICENSE file for details.
 ```
