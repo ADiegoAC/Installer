@@ -32,7 +32,7 @@ Click GERAR INSTALADOR (BUILD).
 ⚙️ The Installer Script (instalador.ps1)  
 The builder compiles your instalador.ps1 into an EXE. Because the EXE runs independently, it expects the embedded files and uses specific variables.  
 
-Injecting the App Name  
+> Injecting the App Name  
 In your 1nst4ll3r.ps1, define your destination folder variable using the {{DEST_FOLDER}} token. The builder will automatically replace this token with the "App Name" from the GUI before compiling: 
 
 ``` powershell  
@@ -44,9 +44,9 @@ if ($isAdmin) {
     $installPath = "$env:ProgramFiles\$destFolder"  
 } else {  
     $installPath = "$env:LOCALAPPDATA\$destFolder"  
-}  ```  
+}  
 
-Accessing Embedded Files  
+> Accessing Embedded Files  
 The builder embeds the payload and EULA into the EXE. Your installer script must read them from the temp directory at runtime:  
 
 powershell  
