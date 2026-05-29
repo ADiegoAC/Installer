@@ -18,7 +18,7 @@ if (Test-Path $jsonPath) {
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="PS2EXE Builder" Height="670" Width="720"
+        Title="1nst4ll3r Builder" Height="670" Width="720"
         WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize"
         Background="#2D2D30" Foreground="#FFFFFF" FontFamily="Segoe UI">
 
