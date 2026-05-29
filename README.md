@@ -55,10 +55,10 @@ powershell
 Expand-Archive -Path $zipPath -DestinationPath $installPath -Force  
 
 2. Show EULA (if it exists)  
- $eulaPath = "$env:TEMP\eula.txt" # or .rtf depending on your setup  
+ $eulaPath = "$env:TEMP\eula.txt" or .rtf depending on your setup  
 if (Test-Path $eulaPath) {  
-    # Show your EULA form logic here  
-    # Ensure the form's CancelButton is set so clicking "X" cancels the installation!  
+    Show your EULA form logic here  
+    Ensure the form's CancelButton is set so clicking "X" cancels the installation!  
 }  
 📄 Licenses JSON  
 The builder dynamically populates the license dropdown using a licenses-complete.json file. This file should follow the standard SPDX format:  
