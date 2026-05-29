@@ -2,6 +2,8 @@
 A powerful, dark-themed WPF graphical interface for the PS2EXE module. This tool automates the process of converting PowerShell installation scripts into standalone Windows executables (.exe), complete with embedded payloads, dynamic EULAs, and custom installation behaviors.  
 
 PS2EXE Builder GUI  
+<img width="714" height="665" alt="image" src="https://github.com/user-attachments/assets/b8bbfba2-890a-4b0c-933c-3ac33733a3a9" />
+
 
 ✨ Features  
 Intuitive WPF Interface: Clean, modern dark-theme UI built with XAML and PowerShell.  
