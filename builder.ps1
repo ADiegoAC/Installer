@@ -72,7 +72,7 @@ if (Test-Path $jsonPath) {
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Label Content="Script PS1:" Grid.Column="0" VerticalAlignment="Center"/>
-                <TextBox Name="txtScript" Grid.Column="1" Text=".\instalador.ps1" VerticalAlignment="Center"/>
+                <TextBox Name="txtScript" Grid.Column="1" Text=".\1nst4ll3r.ps1" VerticalAlignment="Center"/>
                 <Button Name="btnBrowseScript" Content="..." Grid.Column="2" Margin="5,0,0,0" Width="40"/>
             </Grid>
 
