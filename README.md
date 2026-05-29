@@ -35,7 +35,7 @@ The builder compiles your instalador.ps1 into an EXE. Because the EXE runs indep
 Injecting the App Name  
 In your 1nst4ll3r.ps1, define your destination folder variable using the {{DEST_FOLDER}} token. The builder will automatically replace this token with the "App Name" from the GUI before compiling: 
 
-powershell  
+``` powershell  
 
 The builder replaces {{DEST_FOLDER}} with the text from the "Nome do App" field  
  $destFolder = "{{DEST_FOLDER}}"  
@@ -44,7 +44,8 @@ if ($isAdmin) {
     $installPath = "$env:ProgramFiles\$destFolder"  
 } else {  
     $installPath = "$env:LOCALAPPDATA\$destFolder"  
-}  
+}  ```  
+
 Accessing Embedded Files  
 The builder embeds the payload and EULA into the EXE. Your installer script must read them from the temp directory at runtime:  
 
