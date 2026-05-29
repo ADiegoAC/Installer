@@ -33,9 +33,7 @@ Click GERAR INSTALADOR (BUILD).
 The builder compiles your instalador.ps1 into an EXE. Because the EXE runs independently, it expects the embedded files and uses specific variables.  
 
 Injecting the App Name  
-In your instalador.ps1, define your destination folder variable using the {{DEST_FOLDER}} token. The builder will automatically replace this token with the "App Name" from the GUI before compiling:  
-
-powershell  
+In your 1nst4ll3r.ps1, define your destination folder variable using the {{DEST_FOLDER}} token. The builder will automatically replace this token with the "App Name" from the GUI before compiling: powershell  
 
 The builder replaces {{DEST_FOLDER}} with the text from the "Nome do App" field  
  $destFolder = "{{DEST_FOLDER}}"  
