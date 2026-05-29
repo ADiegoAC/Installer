@@ -79,7 +79,7 @@ The builder dynamically populates the license dropdown using a licenses-complete
   ```      {  ```  
          ```   "licenseId": "Apache-2.0",  ```  
        ```     "name": "Apache License 2.0",  ```  
-       ```     "licenseText": "Apache License..."  ```
+       ```     "licenseText": "Apache License..."  ```  
   ```      }  ```  
  ```   ]  ```  
 ```}  ```  
