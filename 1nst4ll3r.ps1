@@ -47,6 +47,10 @@ Add-Type -AssemblyName System.Drawing
 
 if (Test-Path $eulaPath) {
     $eulaText = [System.IO.File]::ReadAllText($eulaPath)
+    $isRtfEula = $eulaText.TrimStart().StartsWith("{\rtf")
+    if (-not $isRtfEula) {
+        $eulaText = $eulaText -replace "(`r`n|`n|`r)", [Environment]::NewLine
+    }
 
     $formEula             = New-Object System.Windows.Forms.Form
     $formEula.Text        = "Contrato de Licença"
@@ -63,9 +67,12 @@ if (Test-Path $eulaPath) {
     $lblEulaTitle.Location = New-Object System.Drawing.Point(15, 15)
     $lblEulaTitle.Size    = New-Object System.Drawing.Size(470, 20)
 
-    $txtEula              = New-Object System.Windows.Forms.TextBox
-    $txtEula.Text         = $eulaText
-    $txtEula.Multiline    = $true
+    $txtEula              = New-Object System.Windows.Forms.RichTextBox
+    if ($isRtfEula) {
+        $txtEula.Rtf      = $eulaText
+    } else {
+        $txtEula.Text     = $eulaText
+    }
     $txtEula.ScrollBars   = "Vertical"
     $txtEula.ReadOnly     = $true
     $txtEula.Location     = New-Object System.Drawing.Point(15, 40)

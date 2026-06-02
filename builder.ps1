@@ -18,7 +18,7 @@ if (Test-Path $jsonPath) {
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="1nst4ll3r Builder" Height="710" Width="720"
+        Title="1nst4ll3r Builder" Height="650" Width="720"
         WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize"
         Background="#2D2D30" Foreground="#FFFFFF" FontFamily="Segoe UI"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
@@ -28,7 +28,7 @@ if (Test-Path $jsonPath) {
             <Setter Property="Background" Value="#007ACC"/>
             <Setter Property="Foreground" Value="White"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="Padding" Value="8,3"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontSize" Value="12"/>
             <Style.Triggers>
@@ -41,23 +41,28 @@ if (Test-Path $jsonPath) {
             <Setter Property="Background" Value="#3E3E42"/>
             <Setter Property="Foreground" Value="#FFFFFF"/>
             <Setter Property="BorderBrush" Value="#555"/>
-            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Padding" Value="3,1"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="MinHeight" Value="21"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="MinHeight" Value="21"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
 
-    <Grid Margin="20">
+    <Grid Margin="14">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
-            <TextBlock Text="Configuração do Build" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#4EC9B0"/>
+            <TextBlock Text="Configuração do Build" FontSize="16" FontWeight="Bold" Margin="0,0,0,10" Foreground="#4EC9B0"/>
             
-            <Grid Margin="0,5">
+            <Grid Margin="0,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
@@ -65,10 +70,10 @@ if (Test-Path $jsonPath) {
                 </Grid.ColumnDefinitions>
                 <Label Content="Pasta Fonte:" Grid.Column="0" VerticalAlignment="Center"/>
                 <TextBox Name="txtSource" Grid.Column="1" Text=".\bin" VerticalAlignment="Center"/>
-                <Button Name="btnBrowseSource" Content="..." Grid.Column="2" Margin="5,0,0,0" Width="40"/>
+                <Button Name="btnBrowseSource" Content="..." Grid.Column="2" Margin="4,0,0,0" Width="36"/>
             </Grid>
 
-            <Grid Margin="0,5">
+            <Grid Margin="0,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
@@ -76,10 +81,10 @@ if (Test-Path $jsonPath) {
                 </Grid.ColumnDefinitions>
                 <Label Content="EXE Principal:" Grid.Column="0" VerticalAlignment="Center"/>
                 <TextBox Name="txtMainExe" Grid.Column="1" Text="" VerticalAlignment="Center"/>
-                <Button Name="btnBrowseMainExe" Content="..." Grid.Column="2" Margin="5,0,0,0" Width="40"/>
+                <Button Name="btnBrowseMainExe" Content="..." Grid.Column="2" Margin="4,0,0,0" Width="36"/>
             </Grid>
 
-            <Grid Margin="0,5">
+            <Grid Margin="0,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
@@ -87,10 +92,10 @@ if (Test-Path $jsonPath) {
                 </Grid.ColumnDefinitions>
                 <Label Content="Script PS1:" Grid.Column="0" VerticalAlignment="Center"/>
                 <TextBox Name="txtScript" Grid.Column="1" Text=".\1nst4ll3r.ps1" VerticalAlignment="Center"/>
-                <Button Name="btnBrowseScript" Content="..." Grid.Column="2" Margin="5,0,0,0" Width="40"/>
+                <Button Name="btnBrowseScript" Content="..." Grid.Column="2" Margin="4,0,0,0" Width="36"/>
             </Grid>
 
-            <Grid Margin="0,5">
+            <Grid Margin="0,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
@@ -98,10 +103,10 @@ if (Test-Path $jsonPath) {
                 </Grid.ColumnDefinitions>
                 <Label Content="Ícone (.ico):" Grid.Column="0" VerticalAlignment="Center"/>
                 <TextBox Name="txtIcon" Grid.Column="1" Text="" VerticalAlignment="Center"/>
-                <Button Name="btnBrowseIcon" Content="..." Grid.Column="2" Margin="5,0,0,0" Width="40"/>
+                <Button Name="btnBrowseIcon" Content="..." Grid.Column="2" Margin="4,0,0,0" Width="36"/>
             </Grid>
 
-            <Grid Margin="0,5">
+            <Grid Margin="0,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
@@ -110,7 +115,7 @@ if (Test-Path $jsonPath) {
                 <TextBox Name="txtOutput" Grid.Column="1" Text="Setup.exe" VerticalAlignment="Center"/>
             </Grid>
 
-            <Grid Margin="0,5">
+            <Grid Margin="0,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="110"/>
                     <ColumnDefinition Width="*"/>
@@ -121,40 +126,40 @@ if (Test-Path $jsonPath) {
 
             <!-- Checkbox de Admin -->
             <CheckBox Name="chkRequireAdmin" Content="Modo Administrador (Pede UAC e instala em Program Files)" 
-                      Margin="0,15,0,0" Foreground="#FFFFFF" Background="#2D2D30" 
+                      Margin="0,10,0,0" Foreground="#FFFFFF" Background="#2D2D30" 
                       BorderBrush="#4EC9B0" VerticalContentAlignment="Center"/>
 
-            <Separator Margin="0,15,0,15" Background="#555"/>
+            <Separator Margin="0,10,0,10" Background="#555"/>
 
             <TextBlock Text="Configuração de Licença (EULA)" FontSize="14" FontWeight="Bold" Foreground="#CE9178"/>
             
             <!-- Overlay do ComboBox -->
-            <Grid Margin="0,10,0,5">
+            <Grid Margin="0,7,0,3">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="150"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Label Content="Modelo de Licença:" Grid.Column="0" VerticalAlignment="Center"/>
-                <Canvas Grid.Column="1" Height="24" VerticalAlignment="Center">
-                    <ComboBox Name="cboLicense" Width="300" Height="24" Foreground="#3E3E42" BorderBrush="#555"/>
-                    <TextBox Name="txtLicenseDisplay" Width="275" Height="24" Text="Nenhuma (Sem EULA)" IsReadOnly="True" 
+                <Canvas Grid.Column="1" Height="21" VerticalAlignment="Center">
+                    <ComboBox Name="cboLicense" Width="300" Height="21" Foreground="#3E3E42" BorderBrush="#555"/>
+                    <TextBox Name="txtLicenseDisplay" Width="275" Height="21" Text="Nenhuma (Sem EULA)" IsReadOnly="True" 
                              Background="#3E3E42" Foreground="#FFFFFF" BorderThickness="0"
-                             VerticalContentAlignment="Center" Padding="5,0"/>
+                             VerticalContentAlignment="Center" Padding="3,0"/>
                 </Canvas>
-                <Button Name="btnLoadFile" Content="Carregar Arquivo" Grid.Column="2" Margin="5,0,0,0"/>
+                <Button Name="btnLoadFile" Content="Carregar Arquivo" Grid.Column="2" Margin="4,0,0,0"/>
             </Grid>
 
             <Label Content="Conteúdo da Licença (Pré-visualização):" FontSize="10" Foreground="#AAA"/>
-            <TextBox Name="txtLicenseContent" Height="60" TextWrapping="Wrap" AcceptsReturn="True" 
-                     VerticalScrollBarVisibility="Auto" Margin="0,0,0,10" FontSize="10" Background="#252526"/>
+            <TextBox Name="txtLicenseContent" Height="120" TextWrapping="Wrap" AcceptsReturn="True" 
+                     VerticalScrollBarVisibility="Auto" Margin="0,0,0,7" FontSize="10" Background="#252526"/>
 
-            <Button Name="btnBuild" Content="GERAR INSTALADOR (BUILD)" Height="40" FontSize="14" FontWeight="Bold"/>
+            <Button Name="btnBuild" Content="GERAR INSTALADOR (BUILD)" Height="34" FontSize="14" FontWeight="Bold"/>
         </StackPanel>
 
-        <GroupBox Header="Log de Saída" Grid.Row="1" Margin="0,1,0,0" Foreground="#AAA" BorderBrush="#555">
+        <GroupBox Header="Log de Saída" Grid.Row="1" Margin="0,0,0,0" Foreground="#AAA" BorderBrush="#555">
             <TextBox Name="txtLog" IsReadOnly="True" Background="#1E1E1E" Foreground="#CCC" 
-                     Height="100" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                     Height="80" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
         </GroupBox>
     </Grid>
 </Window>
