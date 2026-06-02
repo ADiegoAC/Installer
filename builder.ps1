@@ -20,7 +20,8 @@ if (Test-Path $jsonPath) {
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="1nst4ll3r Builder" Height="670" Width="720"
         WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize"
-        Background="#2D2D30" Foreground="#FFFFFF" FontFamily="Segoe UI">
+        Background="#2D2D30" Foreground="#FFFFFF" FontFamily="Segoe UI"
+        UseLayoutRounding="True" SnapsToDevicePixels="True">
 
     <Window.Resources>
         <Style TargetType="Button">
@@ -42,6 +43,8 @@ if (Test-Path $jsonPath) {
             <Setter Property="BorderBrush" Value="#555"/>
             <Setter Property="Padding" Value="5"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="MinHeight" Value="24"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
 
@@ -174,6 +177,26 @@ function Write-Log {
     $txtLog.ScrollToEnd()
 }
 
+function Select-Folder {
+    param([string]$InitialPath)
+
+    $resolvedPath = Resolve-Path $InitialPath -ErrorAction SilentlyContinue
+    if ($resolvedPath) {
+        $InitialPath = $resolvedPath.Path
+    } else {
+        $InitialPath = (Get-Location).Path
+    }
+
+    $shell = New-Object -ComObject Shell.Application
+    $folder = $shell.BrowseForFolder(0, "Escolha a pasta fonte", 0, $InitialPath)
+
+    if ($folder) {
+        return $folder.Self.Path
+    }
+
+    return $null
+}
+
 # ── PREENCHER COMBO ───────────────────────────────────────────────────────────
 [void]$cboLicense.Items.Add("Nenhuma (Sem EULA)")
 foreach ($lic in $licensesData) {
@@ -183,22 +206,24 @@ foreach ($lic in $licensesData) {
 
 # ── EVENTOS ───────────────────────────────────────────────────────────────────
  $window.FindName("btnBrowseSource").Add_Click({
-    $fbd = New-Object System.Windows.Forms.FolderBrowserDialog
-    $fbd.SelectedPath = $txtSource.Text
-    if ($fbd.ShowDialog() -eq "OK") { $txtSource.Text = $fbd.SelectedPath }
+    $selectedPath = Select-Folder $txtSource.Text
+    if ($selectedPath) {
+        $txtSource.Text = $selectedPath
+    }
 })
 
  $window.FindName("btnBrowseScript").Add_Click({
-    $ofd = New-Object System.Windows.Forms.OpenFileDialog
+    $ofd = New-Object Microsoft.Win32.OpenFileDialog
     $ofd.Filter = "PowerShell Scripts (*.ps1)|*.ps1"
     $ofd.InitialDirectory = (Get-Location).Path
-    if ($ofd.ShowDialog() -eq "OK") { $txtScript.Text = $ofd.FileName }
+    if ($ofd.ShowDialog() -eq $true) { $txtScript.Text = $ofd.FileName }
 })
 
  $window.FindName("btnBrowseIcon").Add_Click({
-    $ofd = New-Object System.Windows.Forms.OpenFileDialog
+    $ofd = New-Object Microsoft.Win32.OpenFileDialog
     $ofd.Filter = "Icon Files (*.ico)|*.ico"
-    if ($ofd.ShowDialog() -eq "OK") { $txtIcon.Text = $ofd.FileName }
+    $ofd.InitialDirectory = (Get-Location).Path
+    if ($ofd.ShowDialog() -eq $true) { $txtIcon.Text = $ofd.FileName }
 })
 
 # Sincronizar Overlay do ComboBox
@@ -222,9 +247,10 @@ foreach ($lic in $licensesData) {
 })
 
  $window.FindName("btnLoadFile").Add_Click({
-    $ofd = New-Object System.Windows.Forms.OpenFileDialog
+    $ofd = New-Object Microsoft.Win32.OpenFileDialog
     $ofd.Filter = "Text Files (*.txt;*.rtf)|*.txt;*.rtf|All Files (*.*)|*.*"
-    if ($ofd.ShowDialog() -eq "OK") {
+    $ofd.InitialDirectory = (Get-Location).Path
+    if ($ofd.ShowDialog() -eq $true) {
         $txtLicense.Text = [IO.File]::ReadAllText($ofd.FileName)
         $txtLicenseDisplay.Text = (Split-Path $ofd.FileName -Leaf)
         $tempLicensePath = $ofd.FileName 
