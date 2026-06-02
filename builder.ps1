@@ -18,7 +18,7 @@ if (Test-Path $jsonPath) {
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="1nst4ll3r Builder" Height="670" Width="720"
+        Title="1nst4ll3r Builder" Height="710" Width="720"
         WindowStartupLocation="CenterScreen" ResizeMode="CanMinimize"
         Background="#2D2D30" Foreground="#FFFFFF" FontFamily="Segoe UI"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
@@ -74,6 +74,17 @@ if (Test-Path $jsonPath) {
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+                <Label Content="EXE Principal:" Grid.Column="0" VerticalAlignment="Center"/>
+                <TextBox Name="txtMainExe" Grid.Column="1" Text="" VerticalAlignment="Center"/>
+                <Button Name="btnBrowseMainExe" Content="..." Grid.Column="2" Margin="5,0,0,0" Width="40"/>
+            </Grid>
+
+            <Grid Margin="0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="110"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
                 <Label Content="Script PS1:" Grid.Column="0" VerticalAlignment="Center"/>
                 <TextBox Name="txtScript" Grid.Column="1" Text=".\1nst4ll3r.ps1" VerticalAlignment="Center"/>
                 <Button Name="btnBrowseScript" Content="..." Grid.Column="2" Margin="5,0,0,0" Width="40"/>
@@ -86,7 +97,7 @@ if (Test-Path $jsonPath) {
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Label Content="Ícone (.ico):" Grid.Column="0" VerticalAlignment="Center"/>
-                <TextBox Name="txtIcon" Grid.Column="1" Text=".\app.ico" VerticalAlignment="Center"/>
+                <TextBox Name="txtIcon" Grid.Column="1" Text="" VerticalAlignment="Center"/>
                 <Button Name="btnBrowseIcon" Content="..." Grid.Column="2" Margin="5,0,0,0" Width="40"/>
             </Grid>
 
@@ -160,6 +171,7 @@ try {
 
 # Mapeamento de elementos
  $txtSource       = $window.FindName("txtSource")
+ $txtMainExe      = $window.FindName("txtMainExe")
  $txtScript       = $window.FindName("txtScript")
  $txtIcon         = $window.FindName("txtIcon")
  $txtOutput       = $window.FindName("txtOutput")
@@ -188,13 +200,65 @@ function Select-Folder {
     }
 
     $shell = New-Object -ComObject Shell.Application
-    $folder = $shell.BrowseForFolder(0, "Escolha a pasta fonte", 0, $InitialPath)
+    $browseFlags = 0x1 + 0x10 + 0x40
+    $folder = $shell.BrowseForFolder(0, "Escolha a pasta fonte", $browseFlags, 0)
 
     if ($folder) {
         return $folder.Self.Path
     }
 
     return $null
+}
+
+function Get-RelativePath {
+    param([string]$BasePath, [string]$Path)
+
+    $baseFullPath = [System.IO.Path]::GetFullPath($BasePath).TrimEnd('\') + '\'
+    $targetFullPath = [System.IO.Path]::GetFullPath($Path)
+    $baseUri = New-Object System.Uri($baseFullPath)
+    $targetUri = New-Object System.Uri($targetFullPath)
+
+    return [System.Uri]::UnescapeDataString($baseUri.MakeRelativeUri($targetUri).ToString()).Replace('/', '\')
+}
+
+function Get-MainExeCandidate {
+    param([string]$SourcePath)
+
+    $resolvedSource = Resolve-Path $SourcePath -ErrorAction SilentlyContinue
+    if (-not $resolvedSource) { return $null }
+
+    $exeFiles = @(Get-ChildItem -Path $resolvedSource.Path -Recurse -File -Filter *.exe)
+    if ($exeFiles.Count -eq 1) {
+        return (Get-RelativePath $resolvedSource.Path $exeFiles[0].FullName)
+    }
+
+    return $null
+}
+
+function Resolve-MainExePath {
+    param([string]$SourcePath, [string]$MainExe)
+
+    if ([string]::IsNullOrWhiteSpace($MainExe)) { return $null }
+    if ([System.IO.Path]::IsPathRooted($MainExe)) { return $MainExe }
+
+    return (Join-Path $SourcePath $MainExe)
+}
+
+function Export-AssociatedIcon {
+    param([string]$ExePath, [string]$IconPath)
+
+    $icon = [System.Drawing.Icon]::ExtractAssociatedIcon($ExePath)
+    if (-not $icon) { return $false }
+
+    $stream = [System.IO.File]::Create($IconPath)
+    try {
+        $icon.Save($stream)
+    } finally {
+        $stream.Close()
+        $icon.Dispose()
+    }
+
+    return $true
 }
 
 # ── PREENCHER COMBO ───────────────────────────────────────────────────────────
@@ -209,6 +273,28 @@ foreach ($lic in $licensesData) {
     $selectedPath = Select-Folder $txtSource.Text
     if ($selectedPath) {
         $txtSource.Text = $selectedPath
+        $mainExeCandidate = Get-MainExeCandidate $txtSource.Text
+        if ($mainExeCandidate) {
+            $txtMainExe.Text = $mainExeCandidate
+        }
+    }
+})
+
+ $window.FindName("btnBrowseMainExe").Add_Click({
+    $ofd = New-Object Microsoft.Win32.OpenFileDialog
+    $ofd.Filter = "Executáveis (*.exe)|*.exe"
+    $sourcePath = Resolve-Path $txtSource.Text -ErrorAction SilentlyContinue
+    if ($sourcePath) {
+        $ofd.InitialDirectory = $sourcePath.Path
+    } else {
+        $ofd.InitialDirectory = (Get-Location).Path
+    }
+    if ($ofd.ShowDialog() -eq $true) {
+        if ($sourcePath -and $ofd.FileName.StartsWith($sourcePath.Path, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $txtMainExe.Text = Get-RelativePath $sourcePath.Path $ofd.FileName
+        } else {
+            $txtMainExe.Text = $ofd.FileName
+        }
     }
 })
 
@@ -263,8 +349,35 @@ foreach ($lic in $licensesData) {
  $window.FindName("btnBuild").Add_Click({
     if (-not (Test-Path $txtSource.Text)) { Write-Log "Erro: Pasta fonte não encontrada." "#FF5555"; return }
     if (-not (Test-Path $txtScript.Text)) { Write-Log "Erro: Script de instalação não encontrado." "#FF5555"; return }
+    if ([string]::IsNullOrWhiteSpace($txtMainExe.Text)) {
+        $mainExeCandidate = Get-MainExeCandidate $txtSource.Text
+        if ($mainExeCandidate) {
+            $txtMainExe.Text = $mainExeCandidate
+            Write-Log "EXE principal detectado automaticamente: $mainExeCandidate" "#4EC9B0"
+        } else {
+            Write-Log "Erro: escolha o EXE principal. Há zero ou múltiplos executáveis na pasta fonte." "#FF5555"
+            return
+        }
+    }
+
+    $mainExePath = Resolve-MainExePath $txtSource.Text $txtMainExe.Text
+    if (-not (Test-Path $mainExePath)) {
+        Write-Log "Erro: EXE principal não encontrado: $($txtMainExe.Text)" "#FF5555"
+        return
+    }
+
+    $resolvedSource = Resolve-Path $txtSource.Text
+    $sourceFullPath = [System.IO.Path]::GetFullPath($resolvedSource.Path).TrimEnd('\') + '\'
+    $mainExeFullPath = [System.IO.Path]::GetFullPath($mainExePath)
+    if (-not $mainExeFullPath.StartsWith($sourceFullPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Write-Log "Erro: o EXE principal precisa estar dentro da pasta fonte." "#FF5555"
+        return
+    }
+
+    $txtMainExe.Text = Get-RelativePath $resolvedSource.Path $mainExeFullPath
     
     $destFolder = $txtAppName.Text
+    $tempIconPath = $null
     $btn = $window.FindName("btnBuild")
     $btn.IsEnabled = $false
     $btn.Content = "PROCESSANDO..."
@@ -313,7 +426,9 @@ foreach ($lic in $licensesData) {
         Write-Log "Injetando Nome do App no script..."
         $tempScriptPath = Join-Path (Get-Location) "temp_build_script.ps1"
         $scriptContent = Get-Content $txtScript.Text -Raw
-        $scriptContent = $scriptContent -replace '\{\{DEST_FOLDER\}\}', $txtAppName.Text
+        $scriptContent = $scriptContent.Replace('{{DEST_FOLDER}}', $txtAppName.Text)
+        $scriptContent = $scriptContent.Replace('{{MAIN_EXE}}', $txtMainExe.Text)
+        $scriptContent = $scriptContent.Replace('{{SHORTCUT_NAME}}', $txtAppName.Text)
         $scriptContent | Set-Content $tempScriptPath -Encoding UTF8
 
         # 4. Params (PS 5.1 Safe)
@@ -323,7 +438,18 @@ foreach ($lic in $licensesData) {
         $buildParams['embedFiles'] = $embedHash
         $buildParams['noConsole'] = $true
 
-        if (Test-Path $txtIcon.Text) { $buildParams['iconFile'] = $txtIcon.Text }
+        if (-not [string]::IsNullOrWhiteSpace($txtIcon.Text) -and (Test-Path $txtIcon.Text)) {
+            $buildParams['iconFile'] = $txtIcon.Text
+            Write-Log "Ícone do setup definido pelo arquivo .ico."
+        } else {
+            $tempIconPath = Join-Path (Get-Location) "temp_main_icon.ico"
+            if (Export-AssociatedIcon $mainExePath $tempIconPath) {
+                $buildParams['iconFile'] = $tempIconPath
+                Write-Log "Ícone do setup extraído do EXE principal."
+            } else {
+                Write-Log "Aviso: não foi possível extrair ícone do EXE principal." "#CE9178"
+            }
+        }
 
         # Checkbox Admin
         $chkRequireAdmin = $window.FindName("chkRequireAdmin")
@@ -354,6 +480,7 @@ foreach ($lic in $licensesData) {
             Remove-Item $licenseFile -Force 
         }
         if (Test-Path $tempScriptPath) { Remove-Item $tempScriptPath -Force }
+        if ($tempIconPath -and (Test-Path $tempIconPath)) { Remove-Item $tempIconPath -Force }
 
     } catch {
         Write-Log "ERRO CRÍTICO: $_" "#FF5555"

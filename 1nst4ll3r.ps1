@@ -15,6 +15,8 @@ if ([string]::IsNullOrWhiteSpace($programFiles)) { $programFiles = $programFiles
  $extractId  = [Guid]::NewGuid().ToString()
  $sourceFolder = Join-Path $tempPath $extractId
  $destFolder = "{{DEST_FOLDER}}"
+ $mainExe = "{{MAIN_EXE}}"
+ $shortcutName = "{{SHORTCUT_NAME}}"
 
 # ── Validação e Extração ────────────────────────────────────────────────────
 if (-not (Test-Path $zipPath)) {
@@ -70,6 +72,8 @@ if (Test-Path $eulaPath) {
     $txtEula.Size         = New-Object System.Drawing.Size(455, 320)
     $txtEula.BackColor    = [System.Drawing.Color]::White
     $txtEula.BorderStyle  = "FixedSingle"
+    $txtEula.TabStop      = $false
+    $txtEula.HideSelection = $true
 
     $btnAccept            = New-Object System.Windows.Forms.Button
     $btnAccept.Text       = "Eu Aceito"
@@ -91,12 +95,18 @@ if (Test-Path $eulaPath) {
     $btnDecline.ForeColor = [System.Drawing.Color]::Black
     $btnDecline.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
 
-    $formEula.CancelButton = $btnDisagree
+    $formEula.AcceptButton = $btnAccept
+    $formEula.CancelButton = $btnDecline
 
     # Se aceitar, apenas fecha a janela da EULA e o script continua自然mente
     $btnAccept.Add_Click({ $formEula.Close() })
 
     $formEula.Controls.AddRange(@($lblEulaTitle, $txtEula, $btnAccept, $btnDecline))
+    $formEula.Add_Shown({
+        $txtEula.SelectionStart = 0
+        $txtEula.SelectionLength = 0
+        $btnAccept.Focus()
+    })
     $result = $formEula.ShowDialog()
 
     if ($result -ne [System.Windows.Forms.DialogResult]::OK) {
@@ -137,7 +147,7 @@ Add-Type -AssemblyName System.Drawing
 # ── Formulário ────────────────────────────────────────────────────────────────
 $form                  = New-Object System.Windows.Forms.Form
 $form.Text             = "Instalador"
-$form.Size             = New-Object System.Drawing.Size(500, 330)
+$form.Size             = New-Object System.Drawing.Size(500, 430)
 $form.StartPosition    = "CenterScreen"
 $form.FormBorderStyle  = "FixedDialog"
 $form.MaximizeBox      = $false
@@ -148,7 +158,7 @@ $form.Font             = New-Object System.Drawing.Font("Segoe UI", 9)
 # ── Painel esquerdo ───────────────────────────────────────────────────────────
 $panelLeft             = New-Object System.Windows.Forms.Panel
 $panelLeft.Location    = New-Object System.Drawing.Point(14, 14)
-$panelLeft.Size        = New-Object System.Drawing.Size(364, 270)
+$panelLeft.Size        = New-Object System.Drawing.Size(364, 370)
 
 # Label destino
 $lblDest               = New-Object System.Windows.Forms.Label
@@ -184,14 +194,14 @@ $btnBrowse.Add_Click({
 # Label arquivos
 $lblFiles              = New-Object System.Windows.Forms.Label
 $lblFiles.Text         = "ARQUIVOS"
-$lblFiles.Location     = New-Object System.Drawing.Point(0, 54)
+$lblFiles.Location     = New-Object System.Drawing.Point(0, 149)
 $lblFiles.Size         = New-Object System.Drawing.Size(364, 18)
 $lblFiles.ForeColor    = [System.Drawing.Color]::FromArgb(120, 120, 115)
 $lblFiles.Font         = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
 
 # ListView de arquivos
 $listView              = New-Object System.Windows.Forms.ListView
-$listView.Location     = New-Object System.Drawing.Point(0, 74)
+$listView.Location     = New-Object System.Drawing.Point(0, 169)
 $listView.Size         = New-Object System.Drawing.Size(364, 140)
 $listView.View         = "Details"
 $listView.FullRowSelect = $true
@@ -206,14 +216,14 @@ $listView.HeaderStyle  = "Nonclickable"
 # Label progresso
 $lblProgress           = New-Object System.Windows.Forms.Label
 $lblProgress.Text      = "PROGRESSO"
-$lblProgress.Location  = New-Object System.Drawing.Point(0, 224)
+$lblProgress.Location  = New-Object System.Drawing.Point(0, 319)
 $lblProgress.Size      = New-Object System.Drawing.Size(364, 18)
 $lblProgress.ForeColor = [System.Drawing.Color]::FromArgb(120, 120, 115)
 $lblProgress.Font      = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
 
 # ProgressBar
 $progressBar           = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Location  = New-Object System.Drawing.Point(0, 244)
+$progressBar.Location  = New-Object System.Drawing.Point(0, 339)
 $progressBar.Size      = New-Object System.Drawing.Size(364, 10)
 $progressBar.Minimum   = 0
 $progressBar.Maximum   = $installMap.Count
@@ -223,17 +233,43 @@ $progressBar.Style     = "Continuous"
 # Label status
 $lblStatus             = New-Object System.Windows.Forms.Label
 $lblStatus.Text        = "Pronto para instalar."
-$lblStatus.Location    = New-Object System.Drawing.Point(0, 256)
+$lblStatus.Location    = New-Object System.Drawing.Point(0, 351)
 $lblStatus.Size        = New-Object System.Drawing.Size(364, 18)
 $lblStatus.ForeColor   = [System.Drawing.Color]::FromArgb(120, 120, 115)
 $lblStatus.Font        = New-Object System.Drawing.Font("Segoe UI", 9)
 
-$panelLeft.Controls.AddRange(@($lblDest, $txtDest, $btnBrowse, $lblFiles, $listView, $lblProgress, $progressBar, $lblStatus))
+# ── GroupBox de Opções de Atalhos ────────────────────────────────────────────
+$groupBoxShortcuts     = New-Object System.Windows.Forms.GroupBox
+$groupBoxShortcuts.Text = "Opções de Atalho"
+$groupBoxShortcuts.Location = New-Object System.Drawing.Point(0, 54)
+$groupBoxShortcuts.Size = New-Object System.Drawing.Size(364, 85)
+$groupBoxShortcuts.ForeColor = [System.Drawing.Color]::FromArgb(120, 120, 115)
+$groupBoxShortcuts.Font = New-Object System.Drawing.Font("Segoe UI", 9)
+
+# Checkbox: Ícone na Área de Trabalho
+$chkDesktop            = New-Object System.Windows.Forms.CheckBox
+$chkDesktop.Text       = "Criar ícone na Área de Trabalho"
+$chkDesktop.Location   = New-Object System.Drawing.Point(10, 20)
+$chkDesktop.Size       = New-Object System.Drawing.Size(340, 20)
+$chkDesktop.Checked    = $true
+$chkDesktop.Font       = New-Object System.Drawing.Font("Segoe UI", 9)
+
+# Checkbox: Ícone no Menu Iniciar
+$chkStartMenu          = New-Object System.Windows.Forms.CheckBox
+$chkStartMenu.Text     = "Criar ícone no Menu Iniciar"
+$chkStartMenu.Location = New-Object System.Drawing.Point(10, 45)
+$chkStartMenu.Size     = New-Object System.Drawing.Size(340, 20)
+$chkStartMenu.Checked  = $true
+$chkStartMenu.Font     = New-Object System.Drawing.Font("Segoe UI", 9)
+
+$groupBoxShortcuts.Controls.AddRange(@($chkDesktop, $chkStartMenu))
+
+$panelLeft.Controls.AddRange(@($lblDest, $txtDest, $btnBrowse, $lblFiles, $listView, $lblProgress, $progressBar, $lblStatus, $groupBoxShortcuts))
 
 # ── Painel direito (botões) ───────────────────────────────────────────────────
 $panelRight            = New-Object System.Windows.Forms.Panel
 $panelRight.Location   = New-Object System.Drawing.Point(390, 14)
-$panelRight.Size       = New-Object System.Drawing.Size(96, 270)
+$panelRight.Size       = New-Object System.Drawing.Size(96, 370)
 
 $btnInstall            = New-Object System.Windows.Forms.Button
 $btnInstall.Text       = "Instalar"
@@ -318,25 +354,30 @@ $btnInstall.Add_Click({
     }
     if ($errors -eq 0) {
 
-        # ── Atalhos opcionais ─────────────────────────────────────────────────────────
-        $exePath  = Join-Path (Resolve-EnvPath $txtDest.Text) "cpuz_x64.exe"
-        $iconPath = Join-Path (Resolve-EnvPath $txtDest.Text) "cpuz.ico"   # ou caminho para um .ico separado
+        # ── Atalhos opcionais com base nos checkboxes ──────────────────────────────────
+        $exePath  = Join-Path (Resolve-EnvPath $txtDest.Text) $mainExe
+        $shortcutFileName = "$shortcutName.lnk"
         $shell      = New-Object -ComObject WScript.Shell
 
         function New-Shortcut($destination) {
             $lnk             = $shell.CreateShortcut($destination)
             $lnk.TargetPath  = $exePath
-            $lnk.IconLocation = "$iconPath,0"
+            $lnk.IconLocation = "$exePath,0"
             $lnk.WorkingDirectory = Split-Path $exePath
             $lnk.Save()
         }
 
-        # Área de trabalho
-        New-Shortcut (Join-Path (Resolve-EnvPath "%USERPROFILE%\Desktop") "RCAmgr.lnk")
+        # Área de trabalho (se checkbox marcado)
+        if ($chkDesktop.Checked) {
+            $desktop = [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
+            New-Shortcut (Join-Path $desktop $shortcutFileName)
+        }
 
-        # Menu Iniciar — pasta do usuário, sem admin
-        $startMenu = Resolve-EnvPath "%APPDATA%\Microsoft\Windows\Start Menu\Programs"
-        New-Shortcut (Join-Path $startMenu "RCAmgr.lnk")
+        # Menu Iniciar — pasta do usuário, sem admin (se checkbox marcado)
+        if ($chkStartMenu.Checked) {
+            $startMenu = Resolve-EnvPath "%APPDATA%\Microsoft\Windows\Start Menu\Programs"
+            New-Shortcut (Join-Path $startMenu $shortcutFileName)
+        }
 
         $btnInstall.Enabled = $false
         $lblStatus.Text = "Instalação concluída com sucesso."
