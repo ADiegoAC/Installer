@@ -65,18 +65,18 @@ The builder compiles your 1nst4ll3r.ps1 into an EXE. Because the EXE runs indepe
   ```  Ensure the form's CancelButton is set so clicking "X" cancels the installation!  ```
 ``` }  ```
 
-🗑️ Uninstaller Automático  
+🗑️ Automatic Uninstaller  
 
-O builder também gera um desinstalador gráfico usando `uninstall-template.ps1`, compilando-o em `Uninstall.exe` e adicionando-o ao payload instalado.  
+The builder also generates a graphical uninstaller using `uninstall-template.ps1`, compiles it into `Uninstall.exe`, and includes it in the installed application payload.  
 
-- `1nst4ll3r.ps1` grava um arquivo de manifesto `install-manifest.json` no diretório de instalação.  
-- O manifesto contém todos os arquivos instalados, atalhos criados e o caminho de `Uninstall.exe`.  
-- Ao executar `Uninstall.exe`, ele mostra uma confirmação, copia a si mesmo para um arquivo temporário e remove:  
-  - os arquivos instalados  
-  - os atalhos  
-  - o manifesto de instalação  
-  - o próprio `Uninstall.exe` original  
-- O desinstalador tenta também apagar a pasta de instalação se ela ficar vazia.  
+- `1nst4ll3r.ps1` writes an installation manifest file `install-manifest.json` into the installation directory.  
+- The manifest contains all installed files, created shortcuts, and the path to `Uninstall.exe`.  
+- When `Uninstall.exe` runs, it shows a confirmation dialog, copies itself to a temporary executable, and removes:  
+  - the installed files  
+  - the shortcuts  
+  - the installation manifest  
+  - the original `Uninstall.exe`  
+- The uninstaller also attempts to delete the installation directory if it becomes empty.  
 
 📄 Licenses JSON  
 The builder dynamically populates the license dropdown using a licenses-complete.json file. This file should follow the standard SPDX format:  
