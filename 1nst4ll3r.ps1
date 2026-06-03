@@ -321,6 +321,8 @@ $btnInstall.Add_Click({
 
     $baseDest = Resolve-EnvPath $txtDest.Text
     $errors   = 0
+    $installedFiles = New-Object System.Collections.Generic.List[string]
+    $createdShortcuts = New-Object System.Collections.Generic.List[string]
 
     $progressBar.Maximum = $allFiles.Count
 
@@ -347,6 +349,8 @@ $btnInstall.Add_Click({
                 New-Item -ItemType Directory -Path $destDir -Force | Out-Null
             }
             Copy-Item -Path $file.FullName -Destination $destDir -Force -ErrorAction Stop
+            $destFilePath = Join-Path $destDir $file.Name
+            [void]$installedFiles.Add($destFilePath)
             $item.ForeColor        = [System.Drawing.Color]::FromArgb(15, 110, 86)
             $item.SubItems[0].Text = "✓"
         }
@@ -377,14 +381,31 @@ $btnInstall.Add_Click({
         # Área de trabalho (se checkbox marcado)
         if ($chkDesktop.Checked) {
             $desktop = [Environment]::GetFolderPath([Environment+SpecialFolder]::DesktopDirectory)
-            New-Shortcut (Join-Path $desktop $shortcutFileName)
+            $desktopShortcut = Join-Path $desktop $shortcutFileName
+            New-Shortcut $desktopShortcut
+            [void]$createdShortcuts.Add($desktopShortcut)
         }
 
         # Menu Iniciar — pasta do usuário, sem admin (se checkbox marcado)
         if ($chkStartMenu.Checked) {
             $startMenu = Resolve-EnvPath "%APPDATA%\Microsoft\Windows\Start Menu\Programs"
-            New-Shortcut (Join-Path $startMenu $shortcutFileName)
+            $startMenuShortcut = Join-Path $startMenu $shortcutFileName
+            New-Shortcut $startMenuShortcut
+            [void]$createdShortcuts.Add($startMenuShortcut)
         }
+
+        $manifestPath = Join-Path (Resolve-EnvPath $txtDest.Text) "install-manifest.json"
+        $uninstallPath = Join-Path (Resolve-EnvPath $txtDest.Text) "Uninstall.exe"
+        $manifest = [ordered]@{
+            appName = $destFolder
+            installPath = (Resolve-EnvPath $txtDest.Text)
+            mainExe = $exePath
+            uninstallExe = $uninstallPath
+            installedFiles = @($installedFiles)
+            shortcuts = @($createdShortcuts)
+            createdAt = (Get-Date).ToString("o")
+        }
+        $manifest | ConvertTo-Json -Depth 5 | Set-Content -Path $manifestPath -Encoding UTF8
 
         $btnInstall.Enabled = $false
         $lblStatus.Text = "Instalação concluída com sucesso."

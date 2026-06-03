@@ -383,6 +383,8 @@ foreach ($lic in $licensesData) {
     
     $destFolder = $txtAppName.Text
     $tempIconPath = $null
+    $tempPayloadPath = $null
+    $tempUninstallScriptPath = $null
     $btn = $window.FindName("btnBuild")
     $btn.IsEnabled = $false
     $btn.Content = "PROCESSANDO..."
@@ -390,14 +392,52 @@ foreach ($lic in $licensesData) {
     try {
         Write-Log "Iniciando Build..." "#4EC9B0"
 
-        # 1. Zip
+        # 1. Payload temporario com o app + Uninstall.exe
+        $src = $txtSource.Text.TrimEnd('\')
+        $tempPayloadPath = Join-Path (Get-Location) "temp_payload_build"
+        if (Test-Path $tempPayloadPath) { Remove-Item $tempPayloadPath -Recurse -Force }
+        New-Item -ItemType Directory -Path $tempPayloadPath -Force | Out-Null
+
+        Write-Log "Preparando payload temporario..."
+        Copy-Item -Path "$src\*" -Destination $tempPayloadPath -Recurse -Force
+
+        $uninstallTemplatePath = Join-Path (Get-Location) "uninstall-template.ps1"
+        if (-not (Test-Path $uninstallTemplatePath)) {
+            Write-Log "Erro: template do desinstalador nao encontrado: $uninstallTemplatePath" "#FF5555"
+            return
+        }
+
+        $tempUninstallScriptPath = Join-Path (Get-Location) "temp_uninstall_script.ps1"
+        $uninstallContent = Get-Content $uninstallTemplatePath -Raw
+        $uninstallContent = $uninstallContent.Replace('{{APP_NAME}}', $txtAppName.Text)
+        $uninstallContent | Set-Content $tempUninstallScriptPath -Encoding UTF8
+
+        $uninstallExePath = Join-Path $tempPayloadPath "Uninstall.exe"
+        $uninstallParams = @{
+            inputFile = $tempUninstallScriptPath
+            outputFile = $uninstallExePath
+            noConsole = $true
+        }
+        if (-not [string]::IsNullOrWhiteSpace($txtIcon.Text) -and (Test-Path $txtIcon.Text)) {
+            $uninstallParams['iconFile'] = $txtIcon.Text
+        }
+
+        Write-Log "Compilando Uninstall.exe..."
+        & ps2exe @uninstallParams 2>&1 | ForEach-Object { Write-Log "$_" }
+
+        if (-not (Test-Path $uninstallExePath)) {
+            Write-Log "Erro: Uninstall.exe nao foi gerado." "#FF5555"
+            return
+        }
+        Write-Log "Uninstall.exe adicionado ao payload." "#4EC9B0"
+
+        # 2. Zip
         $zipName = "payload.zip"
         $zipPath = Join-Path (Get-Location) $zipName
         if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
         
-        $src = $txtSource.Text.TrimEnd('\')
-        Write-Log "Compactando arquivos de $src..."
-        Compress-Archive -Path "$src\*" -DestinationPath $zipPath -Force
+        Write-Log "Compactando arquivos de $tempPayloadPath..."
+        Compress-Archive -Path "$tempPayloadPath\*" -DestinationPath $zipPath -Force
         
         if (-not (Test-Path $zipPath)) {
              Write-Log "Erro ao criar ZIP." "#FF5555"
@@ -406,7 +446,7 @@ foreach ($lic in $licensesData) {
         }
         Write-Log "ZIP criado." "#4EC9B0"
 
-        # 2. Licença
+        # 3. Licença
         $licenseFile = $null
         if ($cboLicense.SelectedIndex -ne -1 -and $cboLicense.SelectedItem -ne "Nenhuma (Sem EULA)") {
             # Salva na pasta atual junto com o zip, apenas para o build
@@ -418,7 +458,7 @@ foreach ($lic in $licensesData) {
             Write-Log "Licença de arquivo externo definida."
         }
 
-        # 3. Hash Table (O Segredo)
+        # 4. Hash Table (O Segredo)
         $embedHash = @{
             "%TEMP%\payload.zip" = $zipPath
         }
@@ -436,7 +476,7 @@ foreach ($lic in $licensesData) {
         $scriptContent = $scriptContent.Replace('{{SHORTCUT_NAME}}', $txtAppName.Text)
         $scriptContent | Set-Content $tempScriptPath -Encoding UTF8
 
-        # 4. Params (PS 5.1 Safe)
+        # 5. Params (PS 5.1 Safe)
         $buildParams = @{}
         $buildParams['inputFile'] = $tempScriptPath
         $buildParams['outputFile'] = (Join-Path (Get-Location) $txtOutput.Text)
@@ -465,7 +505,7 @@ foreach ($lic in $licensesData) {
             Write-Log "Modo USUÁRIO habilitado. Instalará silenciosamente em AppData." "#4EC9B0"
         }
 
-        # 5. Executar
+        # 6. Executar
         Write-Log "Rodando PS2EXE..."
         & ps2exe @buildParams 2>&1 | ForEach-Object { Write-Log "$_" }
 
@@ -478,18 +518,26 @@ foreach ($lic in $licensesData) {
             Write-Log "Falha: EXE não gerado. Verifique o log acima." "#FF5555"
         }
 
-        # 6. Limpeza
+        # 7. Limpeza
         if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
         # Apaga o rtf temporário, mas NÃO apaga o arquivo original do usuário
         if ($licenseFile -and $licenseFile -ne $tempLicensePath -and (Test-Path $licenseFile)) { 
             Remove-Item $licenseFile -Force 
         }
         if (Test-Path $tempScriptPath) { Remove-Item $tempScriptPath -Force }
+        if ($tempUninstallScriptPath -and (Test-Path $tempUninstallScriptPath)) { Remove-Item $tempUninstallScriptPath -Force }
+        if ($tempPayloadPath -and (Test-Path $tempPayloadPath)) { Remove-Item $tempPayloadPath -Recurse -Force }
         if ($tempIconPath -and (Test-Path $tempIconPath)) { Remove-Item $tempIconPath -Force }
 
     } catch {
         Write-Log "ERRO CRÍTICO: $_" "#FF5555"
     } finally {
+        if ($zipPath -and (Test-Path $zipPath)) { Remove-Item $zipPath -Force -ErrorAction SilentlyContinue }
+        if ($licenseFile -and $licenseFile -ne $tempLicensePath -and (Test-Path $licenseFile)) { Remove-Item $licenseFile -Force -ErrorAction SilentlyContinue }
+        if ($tempScriptPath -and (Test-Path $tempScriptPath)) { Remove-Item $tempScriptPath -Force -ErrorAction SilentlyContinue }
+        if ($tempUninstallScriptPath -and (Test-Path $tempUninstallScriptPath)) { Remove-Item $tempUninstallScriptPath -Force -ErrorAction SilentlyContinue }
+        if ($tempPayloadPath -and (Test-Path $tempPayloadPath)) { Remove-Item $tempPayloadPath -Recurse -Force -ErrorAction SilentlyContinue }
+        if ($tempIconPath -and (Test-Path $tempIconPath)) { Remove-Item $tempIconPath -Force -ErrorAction SilentlyContinue }
         $btn.IsEnabled = $true
         $btn.Content = "GERAR INSTALADOR (BUILD)"
     }

@@ -8,6 +8,7 @@ PS2EXE Builder GUI
 ✨ Features  
 Intuitive WPF Interface: Clean, modern dark-theme UI built with XAML and PowerShell.  
 Dynamic Payload Embedding: Automatically compresses your source folder (bin) into payload.zip and embeds it directly into the final executable.  
+Built-in Uninstaller Support: Compiles `uninstall-template.ps1` into `Uninstall.exe` and includes it in the installed application payload.  
 SPDX License Integration: Dynamically loads licenses from a JSON file (licenses-complete.json), allowing users to select standard EULAs (like MIT, GPL, Apache) from a dropdown.  
 Variable Injection (Token Replacement): Passes the "App Name" directly from the GUI into your installer script using {{DEST_FOLDER}} token replacement, no external config files needed at runtime.  
 UAC & Installation Modes: Toggle between User mode (silent install to AppData) and Admin mode (prompts UAC to install to Program Files).  
@@ -51,18 +52,31 @@ The builder compiles your 1nst4ll3r.ps1 into an EXE. Because the EXE runs indepe
 > Accessing Embedded Files  
 > The builder embeds the payload and EULA into the EXE. Your installer script must read them from the temp directory at runtime:  
 
-``` powershell  ```  
+``` powershell  ```
 
-```  1. Extract the embedded payload  ```  
-```  $zipPath = "$env:TEMP\payload.zip"  ```  
-``` Expand-Archive -Path $zipPath -DestinationPath $installPath -Force  ```  
+```  1. Extract the embedded payload  ```
+```  $zipPath = "$env:TEMP\payload.zip"  ```
+``` Expand-Archive -Path $zipPath -DestinationPath $installPath -Force  ```
 
-``` 2. Show EULA (if it exists)  ```  
-``` $eulaPath = "$env:TEMP\eula.txt" or .rtf depending on your setup  ```  
-``` if (Test-Path $eulaPath) {  ```  
-   ```  Show your EULA form logic here  ```  
-  ```  Ensure the form's CancelButton is set so clicking "X" cancels the installation!  ```  
-``` }  ```  
+``` 2. Show EULA (if it exists)  ```
+``` $eulaPath = "$env:TEMP\eula.txt" or .rtf depending on your setup  ```
+``` if (Test-Path $eulaPath) {  ```
+   ```  Show your EULA form logic here  ```
+  ```  Ensure the form's CancelButton is set so clicking "X" cancels the installation!  ```
+``` }  ```
+
+🗑️ Uninstaller Automático  
+
+O builder também gera um desinstalador gráfico usando `uninstall-template.ps1`, compilando-o em `Uninstall.exe` e adicionando-o ao payload instalado.  
+
+- `1nst4ll3r.ps1` grava um arquivo de manifesto `install-manifest.json` no diretório de instalação.  
+- O manifesto contém todos os arquivos instalados, atalhos criados e o caminho de `Uninstall.exe`.  
+- Ao executar `Uninstall.exe`, ele mostra uma confirmação, copia a si mesmo para um arquivo temporário e remove:  
+  - os arquivos instalados  
+  - os atalhos  
+  - o manifesto de instalação  
+  - o próprio `Uninstall.exe` original  
+- O desinstalador tenta também apagar a pasta de instalação se ela ficar vazia.  
 
 📄 Licenses JSON  
 The builder dynamically populates the license dropdown using a licenses-complete.json file. This file should follow the standard SPDX format:  
